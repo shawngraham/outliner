@@ -1194,7 +1194,18 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
                 }
             }
 
-            // Save files and canvas state// Export to markdown functionality
+                
+// Save files and canvas state
+            saveFilesToLocalStorage();
+            saveToLocalStorage();
+            draw();
+
+            // Reset file input for next use
+            fileInput.value = '';
+        });
+
+
+            // Export to markdown functionality
         const exportButton = document.getElementById('export-button');
         exportButton.addEventListener('click', () => {
             // 1. Identify which cards are actually connected (involved in at least one line)
