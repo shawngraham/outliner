@@ -127,51 +127,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        #file-selector-container {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid rgba(139, 90, 60, 0.3);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #file-selector-container label {
-            font-family: 'Crimson Pro', serif;
-            font-size: 14px;
-            font-weight: 600;
-            color: #5a3825;
-        }
-
-        #file-selector {
-            padding: 6px 12px;
-            border: 1px solid #d4a574;
-            border-radius: 4px;
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            color: #5a3825;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        #file-selector:hover {
-            border-color: #b8885d;
-        }
-
-        #file-selector:focus {
-            outline: none;
-            border-color: #b8885d;
-            box-shadow: 0 0 0 3px rgba(184, 136, 93, 0.1);
-        }
-
         #edit-overlay {
             position: absolute;
             background: white;
@@ -260,15 +215,11 @@
 </head>
 <body>
     <div id="header">
-        <h1 id="app-title">Note Cards Outliner</h1>
+        <h1>Note Cards Outliner</h1>
     </div>
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
-        <div id="file-selector-container">
-            <label for="file-selector">Select File:</label>
-            <select id="file-selector"></select>
-        </div>
-        <button id="reload-button" title="Reload cards from selected markdown file">Reload from File</button>
+        <button id="reload-button" title="Reload all cards from markdown files">Reload from Files</button>
         <button id="reset-button" title="Clear all data and reset to default cards">Reset Canvas</button>
         <div id="instructions">
             <p><strong>Drag empty space</strong> to pan the canvas</p>
@@ -295,33 +246,30 @@
         /*
          * NOTE CARDS OUTLINER
          * 
-         * CONFIGURATION - MULTIPLE FILES:
-         * Configure your markdown files in the MARKDOWN_FILES array below.
-         * Each file needs a display name and filename:
+         * CONFIGURATION - ONE FILE PER CARD:
+         * Each markdown file in the MARKDOWN_FILES array becomes ONE card.
          * 
          * const MARKDOWN_FILES = [
          *     { name: 'Introduction', file: 'notes-intro.md' },
          *     { name: 'Chapter 1', file: 'notes-chapter1.md' }
          * ];
          * 
-         * Markdown format with card separators:
-         * # Card Title
-         * Card content here
-         * #-------
-         * # Next Card
-         * More content
+         * - name: Display name for the card (used as fallback title)
+         * - file: Markdown filename (must be in same folder as HTML)
+         * 
+         * Each markdown file format:
+         * # Card Title (optional - first heading becomes title)
+         * Card content goes here...
+         * Multiple paragraphs supported.
          * 
          * The app will:
-         * 1. Show a dropdown to select between different markdown files
-         * 2. Each file has its own localStorage (work is saved separately)
-         * 3. First check localStorage for saved work on selected file
-         * 4. If no saved work, try to load from the markdown file
-         * 5. If no file found, use default placeholder cards
+         * 1. First check localStorage for saved work
+         * 2. If no saved work, load each markdown file as one card
+         * 3. If files not found, use default placeholder cards
          * 
          * Buttons:
-         * - Dropdown: Switch between different markdown files
-         * - "Reload from File": Reset current file to original markdown
-         * - "Reset Canvas": Clear everything for current file
+         * - "Reload from Files": Reset all cards to original markdown files
+         * - "Reset Canvas": Clear everything and start fresh
          */
 
         const canvas = document.getElementById('canvas');
@@ -338,21 +286,15 @@
         let panStartY = 0;
 
         // LocalStorage persistence
-        const STORAGE_KEY_PREFIX = 'noteCardsOutliner_';
+        const STORAGE_KEY = 'noteCardsOutliner';
         
-        // Configure your markdown files here
+        // Configure your markdown files here - each file becomes one card
         const MARKDOWN_FILES = [
             { name: 'Introduction', file: 'notes-intro.md' },
             { name: 'Chapter 1', file: 'notes-chapter1.md' },
             { name: 'Chapter 2', file: 'notes-chapter2.md' },
             { name: 'Example Notes', file: 'notes.md' }
         ];
-        
-        let currentFile = MARKDOWN_FILES[0].file; // Default to first file
-        
-        function getCurrentStorageKey() {
-            return STORAGE_KEY_PREFIX + currentFile;
-        }
 
         async function loadMarkdownFromFile(filename) {
             try {
@@ -361,7 +303,19 @@
                     throw new Error(`Failed to load ${filename}`);
                 }
                 const text = await response.text();
-                return text;
+                
+                // Parse the markdown file as a single card
+                const lines = text.trim().split('\n');
+                let title = filename.replace('.md', ''); // Default to filename
+                let content = text;
+                
+                // If first line is a heading, use it as title
+                if (lines[0].startsWith('#')) {
+                    title = lines[0].replace(/^#+\s*/, '').trim();
+                    content = lines.slice(1).join('\n').trim();
+                }
+                
+                return { title, content };
             } catch (error) {
                 console.warn('Could not load markdown file:', error);
                 return null;
@@ -387,11 +341,11 @@
                     y: panOffsetY
                 }
             };
-            localStorage.setItem(getCurrentStorageKey(), JSON.stringify(data));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
         function loadFromLocalStorage() {
-            const stored = localStorage.getItem(getCurrentStorageKey());
+            const stored = localStorage.getItem(STORAGE_KEY);
             if (!stored) return false;
 
             try {
@@ -656,21 +610,49 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
             const loaded = loadFromLocalStorage();
 
             if (!loaded) {
-                // Try to load from external markdown file
-                const fileMarkdown = await loadMarkdownFromFile(currentFile);
-                const markdownToUse = fileMarkdown || markdownData; // Fallback to hardcoded
+                // Load all markdown files and create one card per file
+                for (let i = 0; i < MARKDOWN_FILES.length; i++) {
+                    const fileObj = MARKDOWN_FILES[i];
+                    const cardData = await loadMarkdownFromFile(fileObj.file);
+                    
+                    if (cardData) {
+                        // Use the display name if title is just the filename
+                        if (cardData.title === fileObj.file.replace('.md', '')) {
+                            cardData.title = fileObj.name;
+                        }
+                        
+                        const card = new Card(
+                            stackX,
+                            stackY + (i * stackOffset),
+                            cardData,
+                            i
+                        );
+                        cards.push(card);
+                    } else {
+                        // Fallback if file doesn't load
+                        const card = new Card(
+                            stackX,
+                            stackY + (i * stackOffset),
+                            { title: fileObj.name, content: `Could not load ${fileObj.file}` },
+                            i
+                        );
+                        cards.push(card);
+                    }
+                }
                 
-                // Create cards from markdown
-                const cardData = parseMarkdown(markdownToUse);
-                cardData.forEach((data, index) => {
-                    const card = new Card(
-                        stackX,
-                        stackY + (index * stackOffset),
-                        data,
-                        index
-                    );
-                    cards.push(card);
-                });
+                // If no files loaded at all, create default cards from hardcoded markdown
+                if (cards.length === 0) {
+                    const cardData = parseMarkdown(markdownData);
+                    cardData.forEach((data, index) => {
+                        const card = new Card(
+                            stackX,
+                            stackY + (index * stackOffset),
+                            data,
+                            index
+                        );
+                        cards.push(card);
+                    });
+                }
             }
 
             // Draw the canvas
@@ -1071,78 +1053,19 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
             }
         });
 
-        // File selector functionality
-        const fileSelector = document.getElementById('file-selector');
-        const appTitle = document.getElementById('app-title');
-        
-        function updateTitle() {
-            const selected = MARKDOWN_FILES.find(f => f.file === currentFile);
-            if (selected) {
-                appTitle.textContent = `Note Cards Outliner - ${selected.name}`;
-            }
-        }
-        
-        // Populate dropdown
-        MARKDOWN_FILES.forEach((fileObj, index) => {
-            const option = document.createElement('option');
-            option.value = fileObj.file;
-            option.textContent = fileObj.name;
-            if (index === 0) option.selected = true;
-            fileSelector.appendChild(option);
-        });
-
-        // Set initial title
-        updateTitle();
-
-        // Handle file selection change
-        fileSelector.addEventListener('change', async (e) => {
-            const newFile = e.target.value;
-            
-            // Check if there are unsaved changes
-            const hasChanges = cards.length > 0;
-            if (hasChanges) {
-                const confirmSwitch = confirm('Switch to a different file? Your current work is saved and will be available when you return to this file.');
-                if (!confirmSwitch) {
-                    // Revert selection
-                    fileSelector.value = currentFile;
-                    return;
-                }
-            }
-
-            // Switch to new file
-            currentFile = newFile;
-            updateTitle();
-            
-            // Clear current state
-            cards.length = 0;
-            connections.length = 0;
-            panOffsetX = 0;
-            panOffsetY = 0;
-
-            // Load new file
-            await initializeCards();
-        });
-
         // Reset button functionality
         const resetButton = document.getElementById('reset-button');
         resetButton.addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset the canvas? This will delete all your cards and connections for the current file.')) {
-                localStorage.removeItem(getCurrentStorageKey());
-                location.reload(); // Reload page to reset to default state
+            if (confirm('Are you sure you want to reset the canvas? This will delete all your cards and connections.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
             }
         });
 
-        // Reload from file button functionality
+        // Reload from files button functionality
         const reloadButton = document.getElementById('reload-button');
         reloadButton.addEventListener('click', async () => {
-            if (confirm('Reload cards from the markdown file? This will replace your current work for this file.')) {
-                const fileMarkdown = await loadMarkdownFromFile(currentFile);
-                
-                if (!fileMarkdown) {
-                    alert(`Could not load ${currentFile}. Make sure the file exists in the same folder as this HTML file.`);
-                    return;
-                }
-
+            if (confirm('Reload all cards from markdown files? This will replace your current work.')) {
                 // Clear existing cards and connections
                 cards.length = 0;
                 connections.length = 0;
@@ -1151,17 +1074,28 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
                 panOffsetX = 0;
                 panOffsetY = 0;
 
-                // Create cards from file
-                const cardData = parseMarkdown(fileMarkdown);
-                cardData.forEach((data, index) => {
-                    const card = new Card(
-                        stackX,
-                        stackY + (index * stackOffset),
-                        data,
-                        index
-                    );
-                    cards.push(card);
-                });
+                // Load all markdown files and create one card per file
+                for (let i = 0; i < MARKDOWN_FILES.length; i++) {
+                    const fileObj = MARKDOWN_FILES[i];
+                    const cardData = await loadMarkdownFromFile(fileObj.file);
+                    
+                    if (cardData) {
+                        // Use the display name if title is just the filename
+                        if (cardData.title === fileObj.file.replace('.md', '')) {
+                            cardData.title = fileObj.name;
+                        }
+                        
+                        const card = new Card(
+                            stackX,
+                            stackY + (i * stackOffset),
+                            cardData,
+                            i
+                        );
+                        cards.push(card);
+                    } else {
+                        alert(`Could not load ${fileObj.file}. Make sure all files exist in the same folder.`);
+                    }
+                }
 
                 // Save to localStorage and redraw
                 saveToLocalStorage();

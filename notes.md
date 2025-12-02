@@ -1,19 +1,16 @@
-# Introduction to Outlining
-This is the foundational concept for organizing thoughts and creating structured documents.
-#-------
-# Main Ideas
-- Hierarchical organization
-- Visual connections
-- Flexible restructuring
-#-------
-# Supporting Details
-Add specific examples, quotes, and evidence to support your main ideas.
-#-------
-# Key Arguments
-Present your strongest points here with clear reasoning and logic.
-#-------
-# Counter Arguments
-Consider opposing views and how to address them effectively.
-#-------
-# Conclusion
-Synthesize your ideas and provide clear takeaways for the reader.
+# Example: Outlining Strategies
+
+Effective outlining helps organize complex information and create logical flow in your writing.
+
+## Hierarchical Structure
+Start with main ideas at the top level, then add supporting details beneath each main point. This creates a clear organizational framework.
+
+## Flexibility
+Good outlines are flexible—be willing to rearrange sections as your understanding develops. The note card approach makes this easy through visual reorganization.
+
+## Connections Matter
+Use connections between cards to show how ideas relate to each other. This reveals the logical structure of your argument.
+
+## Iterative Process
+Outlining is not a one-time activity. Revisit and refine your outline as you research and write. Let the structure evolve with your thinking.
+
