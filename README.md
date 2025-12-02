@@ -54,6 +54,38 @@ If no heading is present, the `name` from the configuration is used as the title
 3. **Subsequent Loads**: Your edited state is restored automatically
 4. **Reload from Files**: Button resets all cards to their original markdown file content
 5. **Reset Canvas**: Button clears everything and reloads from files
+6. **Export to Markdown**: Generates an ordered outline following your connection structure
+
+### Export Functionality
+The export feature creates a single markdown file that captures your outline structure:
+
+**How Export Ordering Works:**
+1. Finds the **topmost card** on the canvas (highest position)
+2. **Follows connection arrows** to determine the sequence
+3. Adds **unconnected cards** at the end (sorted by position)
+4. Formats titles as `[Title]` in markdown link format
+5. Separates cards with `---` dividers
+
+**Example Export:**
+```markdown
+[Introduction]
+
+This is the intro content...
+
+---
+
+[Main Argument]
+
+Following the connection from intro...
+
+---
+
+[Conclusion]
+
+Final thoughts...
+```
+
+This creates a linear document that reflects the logical flow you've established through connections on the canvas. See `sample-export.md` for a complete example of exported output.
 
 ### Use Cases
 - **Course chapters**: Each chapter as a separate card
@@ -94,5 +126,14 @@ http://localhost:8000/note-cards-canvas.html
 - Use descriptive filenames
 - Start with 4-8 cards for best user experience
 - Students can always create additional cards by double-clicking the canvas
+
+### Export Best Practices
+- **Position matters**: Place your "starting point" card at the top of the canvas
+- **Use connections**: Draw arrows to show the flow of ideas (these determine export order)
+- **Create a path**: Connect cards in the sequence you want them to appear in the final document
+- **Branch and merge**: Multiple cards can connect to one card (converging arguments)
+- **Review before export**: Verify your connection structure creates the desired order
+- **Iterate**: Export, review the markdown, adjust connections, export again
+
 
 
