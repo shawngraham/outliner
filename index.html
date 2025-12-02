@@ -1194,58 +1194,71 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
                 }
             }
 
-            // Save files and canvas state
-            saveFilesToLocalStorage();
-            saveToLocalStorage();
-            draw();
-
-            // Reset file input for next use
-            fileInput.value = '';
-        });
-
-        // Export to markdown functionality
+            // Save files and canvas state// Export to markdown functionality
         const exportButton = document.getElementById('export-button');
         exportButton.addEventListener('click', () => {
-            if (cards.length === 0) {
-                alert('No cards to export!');
+            // 1. Identify which cards are actually connected (involved in at least one line)
+            const connectedSet = new Set();
+            connections.forEach(conn => {
+                connectedSet.add(conn.from);
+                connectedSet.add(conn.to);
+            });
+
+            if (connectedSet.size === 0) {
+                alert('No connected cards to export! Connect cards by dragging one onto another.');
                 return;
             }
 
-            // Find the topmost card (lowest y position)
-            let topmostCard = cards[0];
-            for (let card of cards) {
-                if (card.y < topmostCard.y) {
-                    topmostCard = card;
-                }
+            const orderedCards = [];
+            const visited = new Set();
+
+            // Helper: Get connected children sorted by Y position (visual flow)
+            function getSortedChildren(card) {
+                return connections
+                    .filter(conn => conn.from === card)
+                    .sort((a, b) => a.to.y - b.to.y) // Sort children top-to-bottom
+                    .map(conn => conn.to);
             }
 
-            // Traverse the connection graph starting from topmost card
-            const visited = new Set();
-            const orderedCards = [];
-
-            function traverseFrom(card) {
+            // Recursive Depth-First Traversal
+            function traverse(card) {
                 if (visited.has(card)) return;
+                
                 visited.add(card);
                 orderedCards.push(card);
 
-                // Find all connections FROM this card
-                const outgoingConnections = connections.filter(conn => conn.from === card);
-                
-                // Visit connected cards in order (sorted by y position for consistency)
-                outgoingConnections.sort((a, b) => a.to.y - b.to.y);
-                
-                for (let conn of outgoingConnections) {
-                    traverseFrom(conn.to);
-                }
+                const children = getSortedChildren(card);
+                children.forEach(child => traverse(child));
             }
 
-            // Start traversal from topmost card
-            traverseFrom(topmostCard);
+            // 2. Determine "Roots" among the connected cards
+            // A root is a connected card that has NO incoming connections
+            const incomingCounts = new Map();
+            connectedSet.forEach(c => incomingCounts.set(c, 0)); // Init counts
+            
+            connections.forEach(conn => {
+                if (connectedSet.has(conn.to)) {
+                    incomingCounts.set(conn.to, (incomingCounts.get(conn.to) || 0) + 1);
+                }
+            });
 
-            // Check if we have cards to export
-            if (orderedCards.length === 0) {
-                alert('No cards to export! The topmost card has no connections.');
-                return;
+            // Filter for roots
+            const roots = Array.from(connectedSet).filter(c => incomingCounts.get(c) === 0);
+
+            // 3. Sort Roots by Y position (Top to Bottom)
+            // This ensures if you have two separate trees, the top one exports first
+            roots.sort((a, b) => a.y - b.y);
+
+            // 4. Traverse from all roots
+            roots.forEach(root => traverse(root));
+
+            // 5. Handle Cyclical Chains (e.g., A->B->A)
+            // These have no "root" (0 incoming), so they weren't caught above.
+            if (orderedCards.length < connectedSet.size) {
+                const unvisitedConnected = Array.from(connectedSet).filter(c => !visited.has(c));
+                // Sort by Y to pick the topmost card of the cycle as the start
+                unvisitedConnected.sort((a, b) => a.y - b.y);
+                unvisitedConnected.forEach(card => traverse(card));
             }
 
             // Generate markdown content
@@ -1253,17 +1266,17 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
             for (let i = 0; i < orderedCards.length; i++) {
                 const card = orderedCards[i];
                 
-                // Add card title with markdown link format
-                markdown += `[${card.title}]\n\n`;
+                // Using Markdown Heading for title
+                markdown += `# ${card.title}\n`;
                 
                 // Add card content
                 if (card.content) {
-                    markdown += card.content + '\n\n';
+                    markdown += card.content + '\n';
                 }
                 
-                // Add separator between cards (except last one)
+                // Add the specific separator that this app's Import function looks for
                 if (i < orderedCards.length - 1) {
-                    markdown += '---\n\n';
+                    markdown += '\n#-------\n';
                 }
             }
 
