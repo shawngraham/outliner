@@ -1,38 +1,29 @@
-# Note Cards Outliner - Setup Instructions
+# Note Cards Outliner - User Guide
 
-## Using with Markdown Files (One File = One Card)
+## No Configuration Required!
 
-### Concept
-Each markdown file you configure becomes ONE card on the canvas. This is perfect for organizing different topics, chapters, or concepts as individual cards that you can then arrange and connect visually.
+This tool lets you organize markdown files visually as note cards on a canvas. Simply load your files and start organizing - no code editing needed.
 
-### File Structure
-Place all your markdown files in the same folder as the HTML file:
-```
-your-folder/
-├── note-cards-canvas.html
-├── notes-intro.md
-├── notes-chapter1.md
-├── notes-chapter2.md
-└── notes.md
-```
+## Quick Start
 
-### Configuration
-Edit the `MARKDOWN_FILES` array in the HTML file to list your markdown files:
+1. **Load Your Files**: Click the "Load Files" button and select one or more `.md` or `.markdown` files
+2. **Organize**: Each file becomes a card - drag them around, create connections between related ideas
+3. **Edit**: Double-click cards to edit their content
+4. **Export**: Click "Export to Markdown" to download an ordered outline based on your connections
 
-```javascript
-const MARKDOWN_FILES = [
-    { name: 'Introduction', file: 'notes-intro.md' },
-    { name: 'Chapter 1', file: 'notes-chapter1.md' },
-    { name: 'Chapter 2', file: 'notes-chapter2.md' },
-    { name: 'Example Notes', file: 'notes.md' }
-];
-```
+## How It Works
 
-- **name**: Display name for the card (used as fallback title if no heading in file)
-- **file**: Actual filename (must be in same folder)
+### Loading Files
+- Click "Load Files" button (top of screen)
+- Select multiple markdown files from your computer
+- Each file becomes one card on the canvas
+- Files are saved in your browser - they'll be there when you return
 
-### Markdown File Format
-Each file represents one card. The first `#` heading becomes the card title, and the rest is the content:
+### File Format
+
+The app supports **two markdown file formats** and automatically detects which one you're using:
+
+#### Format 1: One File = One Card
 
 ```markdown
 # My Card Title
@@ -43,17 +34,42 @@ You can use markdown formatting:
 - **Bold text**
 - Multiple paragraphs
 
-Everything in this file becomes the content of one card.
+Everything in this file becomes one card.
 ```
 
-If no heading is present, the `name` from the configuration is used as the title.
+#### Format 2: One File = Multiple Cards
 
-### How It Works
-1. **Initial Load**: Each markdown file is loaded as one card on the canvas
-2. **Auto-Save**: All changes (positions, edits, connections) are saved to localStorage
-3. **Subsequent Loads**: Your edited state is restored automatically
-4. **Reload from Files**: Button resets all cards to their original markdown file content
-5. **Reset Canvas**: Button clears everything and reloads from files
+Use `#-------` as a separator to create multiple cards from a single file:
+
+```markdown
+# First Card
+Content for the first card...
+
+#-------
+
+# Second Card
+Content for the second card...
+
+#-------
+
+# Third Card
+Content for the third card...
+```
+
+**Both formats work!** The app detects the presence of `#-------` separators and parses accordingly.
+
+- **First heading** (line starting with `#`) becomes the card title
+- **Rest of content** (or section) becomes the card content
+- **No heading?** The filename (without .md) is used as the title
+
+### Working with Cards
+- **Position cards**: Drag them anywhere on the canvas
+- **Pan the canvas**: Drag empty space to move around
+- **Create new cards**: Double-click empty space
+- **Edit cards**: Double-click a card to edit title and content
+- **Expand/collapse**: Click card header to show/hide content
+- **Connect cards**: Drag from one card onto another to create a connection arrow
+- **Delete connections**: Double-click a connection line to remove it
 6. **Export to Markdown**: Generates an ordered outline following your connection structure
 
 ### Export Functionality
@@ -65,6 +81,7 @@ The export feature creates a single markdown file that captures your outline str
 3. Adds **unconnected cards** at the end (sorted by position)
 4. Formats titles as `[Title]` in markdown link format
 5. Separates cards with `---` dividers
+6. Downloads as `outline-export.md`
 
 **Example Export:**
 ```markdown
@@ -85,55 +102,65 @@ Following the connection from intro...
 Final thoughts...
 ```
 
-This creates a linear document that reflects the logical flow you've established through connections on the canvas. See `sample-export.md` for a complete example of exported output.
+This creates a linear document that reflects the logical flow you've established through connections on the canvas.
 
-### Use Cases
-- **Course chapters**: Each chapter as a separate card
-- **Topic overview**: Different topics as individual cards students can arrange
-- **Concept mapping**: Pre-loaded concepts that students connect and organize
-- **Essay outline**: Different sections (intro, body, conclusion) as cards to arrange
+### Buttons
 
-### Adding or Removing Cards
-To add a new card:
-1. Create a new `.md` file in the folder
-2. Add it to the `MARKDOWN_FILES` array
-3. Reload the page
+- **Load Files**: Select markdown files from your computer to load as cards
+- **Export to Markdown**: Download your organized outline as a single markdown file
+- **Reset Canvas**: Clear all cards and connections, start fresh
 
-To remove a card:
-1. Remove it from the `MARKDOWN_FILES` array
-2. Reload the page
+### Data Persistence
 
-### For Your Course Website
-1. Upload the HTML and all markdown files to the same directory
-2. Students load the page and see all configured cards
-3. Students can rearrange, connect, and edit cards
-4. Their work persists in their browser between sessions
-5. They can reset to start fresh anytime
+Your work is automatically saved in your browser:
+- **Loaded files**: Saved so they're available next time
+- **Card positions**: Remember where you placed each card
+- **Connections**: All arrows between cards are saved
+- **Edits**: Changes to titles and content are saved
+- **Canvas position**: Your pan/zoom state is saved
 
-### Testing Locally
-Due to browser security (CORS), testing locally requires a web server:
+Everything persists between sessions until you click "Reset Canvas" or clear browser data.
 
-```bash
-# Using Python
-python -m http.server 8000
+## Use Cases
 
-# Then visit
-http://localhost:8000/note-cards-canvas.html
-```
+- **Essay planning**: Load your research notes, organize them, create an outline
+- **Chapter organization**: Arrange sections of a longer work
+- **Lecture notes**: Organize notes from different sources into a coherent structure
+- **Research synthesis**: Connect ideas from multiple papers or sources
+- **Content strategy**: Plan blog posts, articles, or documentation
+- **Study guides**: Organize topics and create connections between concepts
 
-### Tips
-- Keep markdown files focused and concise for better card readability
-- Use descriptive filenames
-- Start with 4-8 cards for best user experience
-- Students can always create additional cards by double-clicking the canvas
+## Tips for Best Results
 
-### Export Best Practices
-- **Position matters**: Place your "starting point" card at the top of the canvas
-- **Use connections**: Draw arrows to show the flow of ideas (these determine export order)
-- **Create a path**: Connect cards in the sequence you want them to appear in the final document
-- **Branch and merge**: Multiple cards can connect to one card (converging arguments)
-- **Review before export**: Verify your connection structure creates the desired order
-- **Iterate**: Export, review the markdown, adjust connections, export again
+### File Organization
+- Break your content into focused, single-topic files
+- Use descriptive filenames (they're used as fallback titles)
+- Start with 4-10 files for manageable organization
+- You can always create more cards by double-clicking the canvas
+
+### Visual Organization
+- **Position matters**: Place your starting point at the top of the canvas
+- **Use connections**: Draw arrows to show the flow of ideas
+- **Create a path**: Connect cards in the sequence you want for your final document
+- **Branch and merge**: Multiple cards can connect to one (converging ideas)
+
+### Export Workflow
+1. Organize your cards visually
+2. Create connections to show the flow
+3. Click "Export to Markdown"
+4. Review the exported file
+5. Adjust connections if needed
+6. Export again
+
+The exported markdown is ready to expand into a full document or can be further edited in any text editor.
+
+## Technical Notes
+
+- **Browser compatibility**: Works in all modern browsers (Chrome, Firefox, Safari, Edge)
+- **No internet required**: After initial load, works completely offline
+- **Privacy**: All data stays in your browser - nothing is sent to any server
+- **File size**: Can handle hundreds of cards, though 10-30 is optimal for usability
+- **Export format**: Standard markdown that works with any markdown editor
 
 
 

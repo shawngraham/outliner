@@ -103,7 +103,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        #reload-button {
+        #load-button {
             position: absolute;
             top: 20px;
             right: 140px;
@@ -121,7 +121,7 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
 
-        #reload-button:hover {
+        #load-button:hover {
             background: rgba(255, 255, 255, 1);
             border-color: #b8885d;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -242,10 +242,12 @@
     </div>
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
+        <input type="file" id="file-input" accept=".md,.markdown" multiple style="display: none;">
         <button id="export-button" title="Export cards as a markdown file">Export to Markdown</button>
-        <button id="reload-button" title="Reload all cards from markdown files">Reload from Files</button>
-        <button id="reset-button" title="Clear all data and reset to default cards">Reset Canvas</button>
+        <button id="load-button" title="Load markdown files from your computer">Load Files</button>
+        <button id="reset-button" title="Clear all data and reset">Reset Canvas</button>
         <div id="instructions">
+            <p><strong>Load Files button</strong> to import .md files</p>
             <p><strong>Drag empty space</strong> to pan the canvas</p>
             <p><strong>Double-click canvas</strong> to create a note</p>
             <p><strong>Double-click card</strong> to edit it</p>
@@ -271,36 +273,47 @@
         /*
          * NOTE CARDS OUTLINER
          * 
-         * CONFIGURATION - ONE FILE PER CARD:
-         * Each markdown file in the MARKDOWN_FILES array becomes ONE card.
+         * NO CONFIGURATION NEEDED!
          * 
-         * const MARKDOWN_FILES = [
-         *     { name: 'Introduction', file: 'notes-intro.md' },
-         *     { name: 'Chapter 1', file: 'notes-chapter1.md' }
-         * ];
+         * How to use:
+         * 1. Click "Load Files" button to select your markdown files (.md)
+         * 2. Each file becomes one or more cards on the canvas
+         * 3. Arrange, connect, and edit cards as needed
+         * 4. Click "Export to Markdown" to save your organized outline
          * 
-         * - name: Display name for the card (used as fallback title)
-         * - file: Markdown filename (must be in same folder as HTML)
+         * Your loaded files and work are saved in the browser and persist
+         * between sessions. You can load new files anytime.
          * 
-         * Each markdown file format:
+         * SUPPORTED FILE FORMATS:
+         * 
+         * Format 1 - One file = One card:
          * # Card Title (optional - first heading becomes title)
          * Card content goes here...
          * Multiple paragraphs supported.
          * 
-         * The app will:
-         * 1. First check localStorage for saved work
-         * 2. If no saved work, load each markdown file as one card
-         * 3. If files not found, use default placeholder cards
+         * Format 2 - One file = Multiple cards (using separators):
+         * # First Card Title
+         * Content for first card...
+         * #-------
+         * # Second Card Title
+         * Content for second card...
+         * #-------
+         * # Third Card Title
+         * Content for third card...
+         * 
+         * The app automatically detects which format you're using!
          * 
          * Buttons:
+         * - "Load Files": Select .md files from your computer
          * - "Export to Markdown": Download ordered outline following connections
-         * - "Reload from Files": Reset all cards to original markdown files
          * - "Reset Canvas": Clear everything and start fresh
          * 
          * Export Logic:
          * Starts with the topmost card (highest on canvas), follows connection
          * arrows to determine order. Cards without connections are added at the
          * end. Titles are formatted as [Title] in markdown link format.
+         * 
+         * If no files are loaded, the app shows example placeholder cards.
          */
 
         const canvas = document.getElementById('canvas');
@@ -318,14 +331,28 @@
 
         // LocalStorage persistence
         const STORAGE_KEY = 'noteCardsOutliner';
+        const STORAGE_KEY_FILES = 'noteCardsOutliner_files';
         
-        // Configure your markdown files here - each file becomes one card
-        const MARKDOWN_FILES = [
-            { name: 'note1', file: 'note1.md' },
-            { name: 'note2', file: 'note2.md' },
-            { name: 'note3', file: 'note3.md' },
-            { name: 'notes-intro', file: 'notes-intro.md' }
-        ];
+        // Store loaded file data
+        let loadedFiles = [];
+
+        function saveFilesToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY_FILES, JSON.stringify(loadedFiles));
+        }
+
+        function loadFilesFromLocalStorage() {
+            const stored = localStorage.getItem(STORAGE_KEY_FILES);
+            if (stored) {
+                try {
+                    loadedFiles = JSON.parse(stored);
+                    return true;
+                } catch (e) {
+                    console.error('Failed to load files from localStorage:', e);
+                    return false;
+                }
+            }
+            return false;
+        }
 
         async function loadMarkdownFromFile(filename) {
             try {
@@ -641,38 +668,22 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
             const loaded = loadFromLocalStorage();
 
             if (!loaded) {
-                // Load all markdown files and create one card per file
-                for (let i = 0; i < MARKDOWN_FILES.length; i++) {
-                    const fileObj = MARKDOWN_FILES[i];
-                    const cardData = await loadMarkdownFromFile(fileObj.file);
-                    
-                    if (cardData) {
-                        // Use the display name if title is just the filename
-                        if (cardData.title === fileObj.file.replace('.md', '')) {
-                            cardData.title = fileObj.name;
-                        }
-                        
-                        const card = new Card(
-                            stackX,
-                            stackY + (i * stackOffset),
-                            cardData,
-                            i
-                        );
-                        cards.push(card);
-                    } else {
-                        // Fallback if file doesn't load
-                        const card = new Card(
-                            stackX,
-                            stackY + (i * stackOffset),
-                            { title: fileObj.name, content: `Could not load ${fileObj.file}` },
-                            i
-                        );
-                        cards.push(card);
-                    }
-                }
+                // Try to load files that were previously loaded by user
+                const hasStoredFiles = loadFilesFromLocalStorage();
                 
-                // If no files loaded at all, create default cards from hardcoded markdown
-                if (cards.length === 0) {
+                if (hasStoredFiles && loadedFiles.length > 0) {
+                    // Create cards from stored file data
+                    loadedFiles.forEach((fileData, index) => {
+                        const card = new Card(
+                            stackX,
+                            stackY + (index * stackOffset),
+                            { title: fileData.title, content: fileData.content },
+                            index
+                        );
+                        cards.push(card);
+                    });
+                } else {
+                    // No files loaded yet - create default cards from hardcoded markdown
                     const cardData = parseMarkdown(markdownData);
                     cardData.forEach((data, index) => {
                         const card = new Card(
@@ -1087,51 +1098,107 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
         // Reset button functionality
         const resetButton = document.getElementById('reset-button');
         resetButton.addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset the canvas? This will delete all your cards and connections.')) {
+            if (confirm('Are you sure you want to reset the canvas? This will delete all your cards, connections, and loaded files.')) {
                 localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(STORAGE_KEY_FILES);
                 location.reload();
             }
         });
 
-        // Reload from files button functionality
-        const reloadButton = document.getElementById('reload-button');
-        reloadButton.addEventListener('click', async () => {
-            if (confirm('Reload all cards from markdown files? This will replace your current work.')) {
-                // Clear existing cards and connections
-                cards.length = 0;
-                connections.length = 0;
-                
-                // Reset pan
-                panOffsetX = 0;
-                panOffsetY = 0;
+        // Load files button functionality
+        const loadButton = document.getElementById('load-button');
+        const fileInput = document.getElementById('file-input');
+        
+        loadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-                // Load all markdown files and create one card per file
-                for (let i = 0; i < MARKDOWN_FILES.length; i++) {
-                    const fileObj = MARKDOWN_FILES[i];
-                    const cardData = await loadMarkdownFromFile(fileObj.file);
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) return;
+
+            // Confirm if there's existing work
+            if (cards.length > 0) {
+                const confirmed = confirm(`Load ${files.length} new file(s)? Your current work will be replaced.`);
+                if (!confirmed) {
+                    fileInput.value = ''; // Reset file input
+                    return;
+                }
+            }
+
+            // Clear existing state
+            cards.length = 0;
+            connections.length = 0;
+            loadedFiles = [];
+            panOffsetX = 0;
+            panOffsetY = 0;
+
+            let cardIndex = 0;
+
+            // Read all files
+            for (let file of files) {
+                try {
+                    const text = await file.text();
                     
-                    if (cardData) {
-                        // Use the display name if title is just the filename
-                        if (cardData.title === fileObj.file.replace('.md', '')) {
-                            cardData.title = fileObj.name;
+                    // Check if file contains card separators
+                    if (text.includes('#-------')) {
+                        // Parse as multiple cards
+                        const cardData = parseMarkdown(text);
+                        
+                        for (let data of cardData) {
+                            // Store file data
+                            loadedFiles.push({ title: data.title, content: data.content });
+                            
+                            // Create card
+                            const card = new Card(
+                                stackX,
+                                stackY + (cardIndex * stackOffset),
+                                data,
+                                cardIndex
+                            );
+                            cards.push(card);
+                            cardIndex++;
+                        }
+                    } else {
+                        // Parse as single card
+                        const lines = text.trim().split('\n');
+                        
+                        let title = file.name.replace(/\.md$|\.markdown$/i, '');
+                        let content = text;
+                        
+                        // If first line is a heading, use it as title
+                        if (lines[0].startsWith('#')) {
+                            title = lines[0].replace(/^#+\s*/, '').trim();
+                            content = lines.slice(1).join('\n').trim();
                         }
                         
+                        // Store file data
+                        loadedFiles.push({ title, content });
+                        
+                        // Create card
                         const card = new Card(
                             stackX,
-                            stackY + (i * stackOffset),
-                            cardData,
-                            i
+                            stackY + (cardIndex * stackOffset),
+                            { title, content },
+                            cardIndex
                         );
                         cards.push(card);
-                    } else {
-                        alert(`Could not load ${fileObj.file}. Make sure all files exist in the same folder.`);
+                        cardIndex++;
                     }
+                } catch (error) {
+                    console.error(`Failed to read file ${file.name}:`, error);
+                    alert(`Could not read ${file.name}`);
                 }
-
-                // Save to localStorage and redraw
-                saveToLocalStorage();
-                draw();
             }
+
+            // Save files and canvas state
+            saveFilesToLocalStorage();
+            saveToLocalStorage();
+            draw();
+
+            // Reset file input for next use
+            fileInput.value = '';
         });
 
         // Export to markdown functionality
