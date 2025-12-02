@@ -76,34 +76,13 @@ Content for the third card...
 The export feature creates a single markdown file that captures your outline structure **following your connections**:
 
 **How Export Ordering Works:**
-1. Finds the **topmost card** on the canvas (highest position - starting point)
-2. **Follows connection arrows** from that card to determine the sequence
-3. **Only exports connected cards** - unconnected cards are excluded
+1. Groups connected cards together (so Chain A doesn't mix with Chain B).
+2. Sorts strictly by Y-position (Top-to-Bottom) within those groups.
+3. Ignores unconnected (isolate) cards.
 4. If multiple cards connect from one card, they're exported in top-to-bottom order
-5. Formats titles as `[Title]` in markdown link format
-6. Separates cards with `---` dividers
+5. Separates cards with `---` dividers
+6. Card content is exported.
 7. Downloads as `outline-export.md`
-
-**Important:** Only cards that are part of a connected path starting from the topmost card will be exported. This lets you work on multiple outlines simultaneously - only export the connected path you're ready to write.
-
-**Example Export:**
-```markdown
-[Introduction]
-
-This is the intro content...
-
----
-
-[Main Argument]
-
-Following the connection from intro...
-
----
-
-[Conclusion]
-
-Final thoughts...
-```
 
 This creates a linear document that reflects the logical flow you've established through connections on the canvas.
 
