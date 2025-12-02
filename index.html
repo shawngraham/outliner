@@ -310,8 +310,10 @@
          * 
          * Export Logic:
          * Starts with the topmost card (highest on canvas), follows connection
-         * arrows to determine order. Cards without connections are added at the
-         * end. Titles are formatted as [Title] in markdown link format.
+         * arrows to determine order. ONLY connected cards are exported - unconnected
+         * cards are excluded. This lets you work on multiple outlines and export
+         * only the connected path you want. Titles are formatted as [Title] in 
+         * markdown link format.
          * 
          * If no files are loaded, the app shows example placeholder cards.
          */
@@ -1229,7 +1231,9 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
                 // Find all connections FROM this card
                 const outgoingConnections = connections.filter(conn => conn.from === card);
                 
-                // Visit connected cards in order
+                // Visit connected cards in order (sorted by y position for consistency)
+                outgoingConnections.sort((a, b) => a.to.y - b.to.y);
+                
                 for (let conn of outgoingConnections) {
                     traverseFrom(conn.to);
                 }
@@ -1238,10 +1242,11 @@ Synthesize your ideas and provide clear takeaways for the reader.`;
             // Start traversal from topmost card
             traverseFrom(topmostCard);
 
-            // Add any unconnected cards at the end (sorted by y position)
-            const unvisited = cards.filter(card => !visited.has(card));
-            unvisited.sort((a, b) => a.y - b.y);
-            orderedCards.push(...unvisited);
+            // Check if we have cards to export
+            if (orderedCards.length === 0) {
+                alert('No cards to export! The topmost card has no connections.');
+                return;
+            }
 
             // Generate markdown content
             let markdown = '';

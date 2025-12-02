@@ -73,15 +73,18 @@ Content for the third card...
 6. **Export to Markdown**: Generates an ordered outline following your connection structure
 
 ### Export Functionality
-The export feature creates a single markdown file that captures your outline structure:
+The export feature creates a single markdown file that captures your outline structure **following your connections**:
 
 **How Export Ordering Works:**
-1. Finds the **topmost card** on the canvas (highest position)
-2. **Follows connection arrows** to determine the sequence
-3. Adds **unconnected cards** at the end (sorted by position)
-4. Formats titles as `[Title]` in markdown link format
-5. Separates cards with `---` dividers
-6. Downloads as `outline-export.md`
+1. Finds the **topmost card** on the canvas (highest position - starting point)
+2. **Follows connection arrows** from that card to determine the sequence
+3. **Only exports connected cards** - unconnected cards are excluded
+4. If multiple cards connect from one card, they're exported in top-to-bottom order
+5. Formats titles as `[Title]` in markdown link format
+6. Separates cards with `---` dividers
+7. Downloads as `outline-export.md`
+
+**Important:** Only cards that are part of a connected path starting from the topmost card will be exported. This lets you work on multiple outlines simultaneously - only export the connected path you're ready to write.
 
 **Example Export:**
 ```markdown
@@ -140,17 +143,19 @@ Everything persists between sessions until you click "Reset Canvas" or clear bro
 
 ### Visual Organization
 - **Position matters**: Place your starting point at the top of the canvas
-- **Use connections**: Draw arrows to show the flow of ideas
-- **Create a path**: Connect cards in the sequence you want for your final document
+- **Use connections**: Draw arrows to show the flow - ONLY connected cards are exported!
+- **Create a complete path**: Connect all cards you want in your export
+- **Multiple outlines**: You can have unconnected groups - only the path from the top card exports
 - **Branch and merge**: Multiple cards can connect to one (converging ideas)
 
 ### Export Workflow
 1. Organize your cards visually
-2. Create connections to show the flow
-3. Click "Export to Markdown"
-4. Review the exported file
-5. Adjust connections if needed
-6. Export again
+2. **Connect all cards** you want in the export (starting from the topmost)
+3. Leave unconnected any cards you're not ready to include
+4. Click "Export to Markdown"
+5. Review the exported file
+6. Adjust connections if needed
+7. Export again
 
 The exported markdown is ready to expand into a full document or can be further edited in any text editor.
 
